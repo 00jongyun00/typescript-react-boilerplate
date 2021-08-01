@@ -1,15 +1,20 @@
 import path from 'path';
-/* import ReactRefreshWebpackPlugin from '@pmmmwh/react-refresh-webpack-plugin'; */
-import webpack from 'webpack';
-/* import ForkTsCheckerWebpackPlugin from 'fork-ts-checker-webpack-plugin'; */
-/* import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer'; */
+import ReactRefreshWebpackPlugin from '@pmmmwh/react-refresh-webpack-plugin';
+import webpack, { Configuration as WebpackConfiguration } from "webpack";
+import { Configuration as WebpackDevServerConfiguration } from "webpack-dev-server";
+
+interface Configuration extends WebpackConfiguration {
+  devServer?: WebpackDevServerConfiguration;
+}
+
+import ForkTsCheckerWebpackPlugin from 'fork-ts-checker-webpack-plugin';
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
-const config: webpack.Configuration = {
-  name: 'typescript-react-boilerplate',
+const config: Configuration = {
+  name: 'sleact',
   mode: isDevelopment ? 'development' : 'production',
-  devtool: !isDevelopment ? 'hidden-source-map' : 'eval',
+  devtool: isDevelopment ? 'hidden-source-map' : 'inline-source-map',
   resolve: {
     extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
     alias: {
@@ -34,24 +39,18 @@ const config: webpack.Configuration = {
             [
               '@babel/preset-env',
               {
-                targets: { browsers: ['last 2 chrome versions'] },
+                targets: { browsers: ['IE 10'] },
                 debug: isDevelopment,
               },
             ],
             '@babel/preset-react',
             '@babel/preset-typescript',
           ],
-          // env: {
-          //   development: {
-          //     plugins: [
-          //       ['@emotion', { sourceMap: true }],
-          //       require.resolve('react-refresh/babel'),
-          //     ],
-          //   },
-          //   production: {
-          //     plugins: ['@emotion'],
-          //   },
-          // },
+          env: {
+            development: {
+              plugins: [require.resolve('react-refresh/babel')],
+            },
+          },
         },
         exclude: path.join(__dirname, 'node_modules'),
       },
@@ -62,44 +61,35 @@ const config: webpack.Configuration = {
     ],
   },
   plugins: [
-    // new ForkTsCheckerWebpackPlugin({
-    //   async: false,
-    //   eslint: {
-    //     files: "./src/**/*",
-    //   },
-    // }),
-    new webpack.EnvironmentPlugin({
-      NODE_ENV: isDevelopment ? 'development' : 'production',
+    new ForkTsCheckerWebpackPlugin({
+      async: false,
+      // eslint: {
+      //   files: "./src/**/*",
+      // },
     }),
+    new webpack.EnvironmentPlugin({ NODE_ENV: isDevelopment ? 'development' : 'production' }),
   ],
   output: {
     path: path.join(__dirname, 'dist'),
     filename: '[name].js',
     publicPath: '/dist/',
   },
-  /* devServer: {
-   *   historyApiFallback: true, // react router
-   *   port: 3090,
-   *   publicPath: '/dist/',
-   *   proxy: {
-   *     '/api/': {
-   *       target: 'http://localhost:3095',
-   *       changeOrigin: true,
-   *     },
-   *   },
-   * }, */
+  devServer: {
+    historyApiFallback: true,
+    port: 3090,
+    publicPath: '/dist/',
+  },
 };
 
 if (isDevelopment && config.plugins) {
   config.plugins.push(new webpack.HotModuleReplacementPlugin());
-  /* config.plugins.push(new ReactRefreshWebpackPlugin());
-   * config.plugins.push(
-   *   new BundleAnalyzerPlugin({ analyzerMode: 'server', openAnalyzer: true }),
-   * ); */
+  config.plugins.push(new ReactRefreshWebpackPlugin({
+    overlay: {
+      useURLPolyfill: true
+    }
+  }));
 }
 if (!isDevelopment && config.plugins) {
-  config.plugins.push(new webpack.LoaderOptionsPlugin({ minimize: true }));
-  /* config.plugins.push(new BundleAnalyzerPlugin({ analyzerMode: 'static' })); */
 }
 
 export default config;
